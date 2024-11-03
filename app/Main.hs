@@ -6,7 +6,7 @@ module Main (main) where
 
 import Network.Simple.TCP (serve, HostPreference(HostAny), closeSock, recv, send)
 import qualified Data.ByteString as BS
-import Control.Monad (void)
+import Control.Monad (void, forever)
 
 
 main :: IO ()
@@ -17,10 +17,11 @@ main = do
     -- Uncomment this block to pass stage 1
     let port = "6379"
     putStrLn $ "Redis server listening on port " ++ port
-    serve HostAny port $ \(socket, address) -> do
-        input <- recv socket 16
-        case input of
-            Just x -> void $ send socket "+PONG\r\n"
-            Nothing -> return ()
-        putStrLn $ "successfully connected client: " ++ show address
-        closeSock socket
+    forever $ do
+        serve HostAny port $ \(socket, address) -> do
+            input <- recv socket 16
+            case input of
+                Just x -> void $ send socket "+PONG\r\n"
+                Nothing -> return ()
+            putStrLn $ "successfully connected client: " ++ show address
+            closeSock socket
