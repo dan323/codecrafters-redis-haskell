@@ -18,10 +18,9 @@ main = do
     -- Uncomment this block to pass stage 1
     let port = "6379"
     putStrLn $ "Redis server listening on port " ++ port
-    forever $ forkFinally (serve HostAny port $ \(socket, address) -> do
+    forever (serve HostAny port $ \(socket, address) -> do
             input <- recv socket 16
             case input of
                 Just x -> void $ send socket "+PONG\r\n"
-                Nothing -> return ()
-            putStrLn $ "successfully connected client: " ++ show address
-            closeSock socket) (const $ return ())
+                Nothing -> error "fail"
+            putStrLn $ "successfully connected client: " ++ show address)
