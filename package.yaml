@@ -13,7 +13,7 @@ license:             BSD3
 dependencies:
 - base >= 4.7 && < 5
 - network-simple  # establish a simple TCP network
-- bytestring  # useful to send bytes over the network
+- bytestring >= 0.12.1  # useful to send bytes over the network
 - network  # required when using bytestring
 - text  # use Text rather than String
 - stm  # may help with a concurrent database
@@ -26,6 +26,7 @@ dependencies:
 - parser-combinators
 - parsec
 - attoparsec
+- word8
 
 executables:
   hs-redis-clone-exe:
