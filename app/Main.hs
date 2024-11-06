@@ -27,7 +27,7 @@ main = do
                 Just x -> do
                     let inp = runParser x
                     case inp of
-                        ByteString x -> if toLower (TSE.decodeUtf8 x) == "ping" then void $ send socket (encode (String "PONG")) else error "unexpected"
+                        Array [ByteString x] -> if toLower (TSE.decodeUtf8 x) == "ping" then void $ send socket (encode (String "PONG")) else error "unexpected"
                         Array [ByteString y, x] -> if toLower (TSE.decodeUtf8 y) == "echo" then void $ send socket (encode x) else error "unexpected"
                         _ -> error "unexpected"
                 Nothing -> error "fail"
