@@ -10,6 +10,7 @@ import Data.RedisRESP (RESP(..), encode )
 import Text.Parser (respParser)
 import Text.Megaparsec (parse, errorBundlePretty)
 import Data.Text (toLower)
+import qualified Data.Text.Encoding as TSE (decodeUtf8)
 
 
 main :: IO ()
@@ -26,8 +27,9 @@ main = do
                 Just x -> do
                     let inp = runParser x
                     case inp of
-                        String x -> if toLower x == "ping" then void $ send socket (encode (String "PONG")) else error "unexpected"
-                        Array [String y, x] -> if toLower y == "echo" then void $ send socket (encode x) else error "unexpected"
+                        ByteString x -> if toLower (TSE.decodeUtf8 x) == "ping" then void $ send socket (encode (String "PONG")) else error "unexpected"
+                        Array [ByteString y, x] -> if toLower (TSE.decodeUtf8 y) == "echo" then void $ send socket (encode x) else error "unexpected"
+                        _ -> error "unexpected"
                 Nothing -> error "fail"
             putStrLn $ "successfully connected client: " ++ show address
 
