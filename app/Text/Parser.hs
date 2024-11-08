@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Text.Parser where
+module Text.Parser (respParser) where
 
 import Control.Applicative.Combinators (count, optional, (<|>))
 import Data.Bifunctor (first)

@@ -1,14 +1,21 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Data.RedisRESP where
+module Data.RedisRESP
+  (RESP(..),
+  Command(..),
+  CommandPart(..),
+  RedisCommand(..),
+  toCommand,
+  encode)
+where
 
-import qualified Data.ByteString as BS (ByteString, length, concat)
-import qualified Data.ByteString.UTF8 as BSU ( fromString )
+import qualified Data.ByteString as BS (ByteString, concat, length)
+import qualified Data.ByteString.UTF8 as BSU (fromString)
 import Data.Int (Int64)
-import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified Data.Text as T
+import qualified Data.Map as M (Map, size, toList)
+import qualified Data.Set as S (Set, size, toList)
+import qualified Data.Text as T (Text)
 import qualified Data.Text.Encoding as TSE (encodeUtf8)
 
 data RESP
@@ -23,49 +30,44 @@ data RESP
   | ByteError BS.ByteString
   | Map (M.Map RESP RESP)
   | Set (S.Set RESP)
-  deriving Eq
+  deriving (Eq)
 
 instance Ord RESP where
-    compare :: RESP -> RESP -> Ordering
-    compare (String t) (String q) = compare t q
-    compare (Error t) (Error q) = compare t q
-    compare (Integer t) (Integer q) = compare t q
-    compare (ByteString t) (ByteString q) = compare t q
-    compare Null Null = EQ
-    compare (Array t) (Array q) = compare t q
-    compare (Boolean t) (Boolean q) = compare t q
-    compare (ByteError t) (ByteError q) = compare t q
-    compare (Map t) (Map q) = compare t q
-    compare (Set t) (Set q) = compare t q
-    compare (String _) _ = LT
-    compare (Error _) _ = LT
-    compare (Integer _) _ = LT
-    compare (ByteString _) _ = LT
-    compare (Array _) _ = LT
-    compare Null _ = LT
-    compare NullByteString _ = LT
-    compare (Boolean _) _ = LT
-    compare (ByteError _) _ = LT
-    compare (Map _) _ = LT
+  compare :: RESP -> RESP -> Ordering
+  compare (String t) (String q) = compare t q
+  compare (Error t) (Error q) = compare t q
+  compare (Integer t) (Integer q) = compare t q
+  compare (ByteString t) (ByteString q) = compare t q
+  compare Null Null = EQ
+  compare (Array t) (Array q) = compare t q
+  compare (Boolean t) (Boolean q) = compare t q
+  compare (ByteError t) (ByteError q) = compare t q
+  compare (Map t) (Map q) = compare t q
+  compare (Set t) (Set q) = compare t q
+  compare (String _) _ = LT
+  compare (Error _) _ = LT
+  compare (Integer _) _ = LT
+  compare (ByteString _) _ = LT
+  compare (Array _) _ = LT
+  compare Null _ = LT
+  compare NullByteString _ = LT
+  compare (Boolean _) _ = LT
+  compare (ByteError _) _ = LT
+  compare (Map _) _ = LT
 
-data Command = ECHO | SET | GET | PING
+data Command = ECHO | SET | GET | PING | PX
 
 data CommandPart = Command Command | Param RESP
 
 type RedisCommand = [CommandPart]
 
-argNum :: Command -> Int
-argNum ECHO = 1
-argNum SET = 1
-argNum GET = 0
-argNum PING = 0
-
-toCommand :: T.Text -> Command
-toCommand "echo" = ECHO
-toCommand "set" = SET
-toCommand "get" = GET
-toCommand "ping" = PING
-toCommand _ = error "unexpected"
+toCommand :: T.Text -> Maybe Command
+toCommand "echo" = Just ECHO
+toCommand "set" = Just SET
+toCommand "get" = Just GET
+toCommand "ping" = Just PING
+toCommand "px" = Just PX
+toCommand _ = Nothing
 
 instance Show Command where
   show :: Command -> String
@@ -73,6 +75,7 @@ instance Show Command where
   show SET = "set"
   show GET = "get"
   show PING = "ping"
+  show PX = "px"
 
 encode :: RESP -> BS.ByteString
 encode (String t) = "+" <> TSE.encodeUtf8 t <> "\r\n"
@@ -84,6 +87,6 @@ encode (Boolean False) = "#f\r\n"
 encode (ByteString bs) = "$" <> (BSU.fromString . show . BS.length) bs <> "\r\n" <> bs <> "\r\n"
 encode (ByteError bs) = "!" <> (BSU.fromString . show . BS.length) bs <> "\r\n" <> bs <> "\r\n"
 encode (Array xs) = "*" <> (BSU.fromString . show . length) xs <> "\r\n" <> BS.concat (fmap encode xs)
-encode (Map map) = "%" <> (BSU.fromString . show . M.size) map <> "\r\n" <> BS.concat ((\(x,y) -> encode x <> encode y) <$> M.toList map)
+encode (Map map) = "%" <> (BSU.fromString . show . M.size) map <> "\r\n" <> BS.concat ((\(x, y) -> encode x <> encode y) <$> M.toList map)
 encode (Set set) = "~" <> (BSU.fromString . show . S.size) set <> "\r\n" <> BS.concat (encode <$> S.toList set)
 encode NullByteString = "$-1\r\n"

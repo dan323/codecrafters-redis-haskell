@@ -28,6 +28,7 @@ dependencies:
 - attoparsec
 - word8
 - utf8-string
+- time
 
 executables:
   hs-redis-clone-exe:
