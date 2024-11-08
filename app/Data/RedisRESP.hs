@@ -18,6 +18,7 @@ data RESP
   | ByteString BS.ByteString
   | Array [RESP]
   | Null
+  | NullByteString
   | Boolean Bool
   | ByteError BS.ByteString
   | Map (M.Map RESP RESP)
@@ -42,14 +43,36 @@ instance Ord RESP where
     compare (ByteString _) _ = LT
     compare (Array _) _ = LT
     compare Null _ = LT
+    compare NullByteString _ = LT
     compare (Boolean _) _ = LT
     compare (ByteError _) _ = LT
     compare (Map _) _ = LT
 
-newtype RedisCommand = Command T.Text
+data Command = ECHO | SET | GET | PING
 
-instance Show RedisCommand where
-  show (Command c) = T.unpack $ T.toLower c
+data CommandPart = Command Command | Param RESP
+
+type RedisCommand = [CommandPart]
+
+argNum :: Command -> Int
+argNum ECHO = 1
+argNum SET = 1
+argNum GET = 0
+argNum PING = 0
+
+toCommand :: T.Text -> Command
+toCommand "echo" = ECHO
+toCommand "set" = SET
+toCommand "get" = GET
+toCommand "ping" = PING
+toCommand _ = error "unexpected"
+
+instance Show Command where
+  show :: Command -> String
+  show ECHO = "echo"
+  show SET = "set"
+  show GET = "get"
+  show PING = "ping"
 
 encode :: RESP -> BS.ByteString
 encode (String t) = "+" <> TSE.encodeUtf8 t <> "\r\n"
@@ -63,3 +86,4 @@ encode (ByteError bs) = "!" <> (BSU.fromString . show . BS.length) bs <> "\r\n" 
 encode (Array xs) = "*" <> (BSU.fromString . show . length) xs <> "\r\n" <> BS.concat (fmap encode xs)
 encode (Map map) = "%" <> (BSU.fromString . show . M.size) map <> "\r\n" <> BS.concat ((\(x,y) -> encode x <> encode y) <$> M.toList map)
 encode (Set set) = "~" <> (BSU.fromString . show . S.size) set <> "\r\n" <> BS.concat (encode <$> S.toList set)
+encode NullByteString = "$-1\r\n"
