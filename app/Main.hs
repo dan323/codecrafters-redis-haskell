@@ -56,7 +56,7 @@ toCommandAndParams t = error $ show t
 interpret :: RedisCommand -> ServerState RESP
 interpret [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
 interpret [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
-    let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time) + 1000
+    let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time) + 2000
     lift . putStr $ show milisecs
     date <- lift getCurrentTime
     let expireDate = addUTCTime (realToFrac(fromInteger milisecs/1000.0)) date
@@ -70,7 +70,7 @@ interpret [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteStri
         Just (v, mTime) -> case mTime of
                              Nothing -> return (ByteString v)
                              Just t -> case compare t date of
-                                        GT -> return (ByteString v)
+                                        LT -> return (ByteString v)
                                         _ -> put (M.delete key map) $> NullByteString
 interpret [Command PING] = return $ String "PONG"
 interpret [Command ECHO, Param (ByteString b)] = return $ ByteString b
