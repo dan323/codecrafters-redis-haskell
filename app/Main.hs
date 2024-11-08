@@ -15,7 +15,7 @@ import Text.Parser (respParser)
 import qualified Data.Map as M
 import Control.Monad.State (StateT, gets, modify, evalStateT, liftIO, get, lift, put)
 import Data.Functor (($>))
-import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime)
+import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime, NominalDiffTime)
 
 -- Type alias for the variable store
 type VarStore = M.Map BS.ByteString (BS.ByteString, Maybe UTCTime)
@@ -38,7 +38,7 @@ requestHandler (socket, address) = forever $ do
     input <- recv socket 1024
     date <- lift getCurrentTime
     case input of
-        Just x -> (interpret . toCommandAndParams . runParser) x >>= (liftIO . send socket . encode)
+        Just x -> (interpret date . toCommandAndParams . runParser) x >>= (liftIO . send socket . encode)
         Nothing -> return ()
 
 runParser :: BS.ByteString -> RESP
@@ -58,7 +58,9 @@ interpret :: UTCTime -> RedisCommand -> ServerState RESP
 interpret _ [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
 interpret date [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
     let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time)
-    lift . putStr $ show milisecsToFrac(fromInteger milisecs/1000.0)) date
+    lift . putStr $ show milisecs
+    let expireDate = addUTCTime ((realToFrac :: Double -> NominalDiffTime)((fromInteger :: Integer -> Double) milisecs/(1000 :: Double))) date
+    lift . putStr $ show expireDate
     modify (M.insert key (value, Just expireDate)) $> String "OK"
 interpret date [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteString (ByteString . fst) . M.lookup key)
     map <- get
