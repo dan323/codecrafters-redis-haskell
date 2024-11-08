@@ -4,7 +4,8 @@
 module Main (main) where
 
 import Control.Monad (forever, void)
-import qualified Data.ByteString as BS (ByteString, putStr, readInt)
+import qualified Data.ByteString as BS (ByteString, putStr)
+import Data.ByteString.Char8 as BS (readInteger)
 import Data.RedisRESP (RESP(..), encode, RedisCommand(..), CommandPart(..), Command(..), toCommand)
 import Data.Text (toLower)
 import qualified Data.Text.Encoding as TSE (decodeUtf8)
@@ -14,7 +15,7 @@ import Text.Parser (respParser)
 import qualified Data.Map as M
 import Control.Monad.State (StateT, gets, modify, evalStateT, liftIO, get, lift, put)
 import Data.Functor (($>))
-import Data.Time.Clock (getCurrentTime, UTCTime)
+import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime)
 
 -- Type alias for the variable store
 type VarStore = M.Map BS.ByteString (BS.ByteString, Maybe UTCTime)
@@ -54,10 +55,10 @@ toCommandAndParams _ = error "This is unexpected"
 interpret :: RedisCommand -> ServerState RESP
 interpret [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
 interpret [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
-    let milisecs = BS.readInt time
+    let milisecs = maybe 0 fst $ BS.readInteger time
     date <- lift getCurrentTime
     let expireDate = addUTCTime (realToFrac(fromInteger milisecs/1000.0)) date
-    modify (M.insert key (value, Just expireDat))
+    modify (M.insert key (value, Just expireDate)) $> String "OK"
 interpret [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteString (ByteString . fst) . M.lookup key)
     map <- get
     date <- lift getCurrentTime 
