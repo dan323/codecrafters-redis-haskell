@@ -71,7 +71,7 @@ interpret date [Command GET, Param (ByteString key)] = do -- gets (maybe NullByt
                              Nothing -> return (ByteString v)
                              Just t -> case compare t date of
                                         LT -> return (ByteString v)
-                                        _ -> put (M.delete key map) $> error ("Data was deleted " ++ show date ++ " " ++ show t)
+                                        _ -> put (M.delete key map) $> error ("Data was deleted " ++ show date ++ " " ++ show t ++ " " ++ show (compare t date))
 interpret _ [Command PING] = return $ String "PONG"
 interpret _ [Command ECHO, Param (ByteString b)] = return $ ByteString b
 interpret _ _ = error "Unexpected"
