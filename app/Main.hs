@@ -36,6 +36,7 @@ main = do
 requestHandler :: (Socket, SockAddr) -> ServerState ()
 requestHandler (socket, address) = forever $ do
     input <- recv socket 1024
+    date <- lift getCurrentTime
     case input of
         Just x -> (interpret . toCommandAndParams . runParser) x >>= (liftIO . send socket . encode)
         Nothing -> return ()
@@ -53,17 +54,14 @@ toCommandAndParams (Array (x:xs)) = maybe (Param x) Command (transformToCommand 
 toCommandAndParams (Array []) = []
 toCommandAndParams t = error $ show t
 
-interpret :: RedisCommand -> ServerState RESP
-interpret [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
-interpret [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
-    let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time) + 2000
-    lift . putStr $ show milisecs
-    date <- lift getCurrentTime
-    let expireDate = addUTCTime (realToFrac(fromInteger milisecs/1000.0)) date
+interpret :: UTCTime -> RedisCommand -> ServerState RESP
+interpret _ [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
+interpret date [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
+    let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time)
+    lift . putStr $ show milisecsToFrac(fromInteger milisecs/1000.0)) date
     modify (M.insert key (value, Just expireDate)) $> String "OK"
-interpret [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteString (ByteString . fst) . M.lookup key)
+interpret date [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteString (ByteString . fst) . M.lookup key)
     map <- get
-    date <- lift getCurrentTime 
     let mvalue = M.lookup key map
     case mvalue of
         Nothing -> return NullByteString
@@ -72,6 +70,6 @@ interpret [Command GET, Param (ByteString key)] = do -- gets (maybe NullByteStri
                              Just t -> case compare t date of
                                         LT -> return (ByteString v)
                                         _ -> put (M.delete key map) $> NullByteString
-interpret [Command PING] = return $ String "PONG"
-interpret [Command ECHO, Param (ByteString b)] = return $ ByteString b
-interpret _ = error "Unexpected"
+interpret _ [Command PING] = return $ String "PONG"
+interpret _ [Command ECHO, Param (ByteString b)] = return $ ByteString b
+interpret _ _ = error "Unexpected"
