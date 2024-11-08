@@ -30,7 +30,7 @@ data RESP
   | ByteError BS.ByteString
   | Map (M.Map RESP RESP)
   | Set (S.Set RESP)
-  deriving (Eq)
+  deriving (Eq, Show)
 
 instance Ord RESP where
   compare :: RESP -> RESP -> Ordering

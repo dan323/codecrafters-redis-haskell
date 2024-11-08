@@ -50,7 +50,7 @@ toCommandAndParams (Array (x:xs)) = maybe (Param x) Command (transformToCommand 
     where
         transformToCommand (ByteString p) = (toCommand . toLower . TSE.decodeUtf8) p
         transformToCommand _ = Nothing
-toCommandAndParams _ = error "This is unexpected"
+toCommandAndParams t = error $ show t
 
 interpret :: RedisCommand -> ServerState RESP
 interpret [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
