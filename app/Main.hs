@@ -35,8 +35,8 @@ requestHandler :: (Socket, SockAddr) -> ServerState ()
 requestHandler (socket, address) = forever $ do
     input <- recv socket 1024
     case input of
-        Just x -> (interpret . toCommandAndParams . runParser) x >>= (liftIO . BS.putStr . encode)
-        Nothing -> error "fail"
+        Just x -> (interpret . toCommandAndParams . runParser) x >>= (liftIO . send socket . encode)
+        Nothing -> liftIO $ BS.putStr "No input"
     liftIO $ putStrLn $ "successfully connected client: " ++ show address
 
 runParser :: BS.ByteString -> RESP
