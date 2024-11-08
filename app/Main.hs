@@ -66,7 +66,7 @@ interpret date [Command GET, Param (ByteString key)] = do -- gets (maybe NullByt
     map <- get
     let mvalue = M.lookup key map
     case mvalue of
-        Nothing -> error "Data was not inserted" -- return NullByteString
+        Nothing -> return NullByteString
         Just (v, mTime) -> case mTime of
                              Nothing -> return (ByteString v)
                              Just t -> case compare t date of
