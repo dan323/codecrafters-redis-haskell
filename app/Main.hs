@@ -50,6 +50,7 @@ toCommandAndParams (Array (x:xs)) = maybe (Param x) Command (transformToCommand 
     where
         transformToCommand (ByteString p) = (toCommand . toLower . TSE.decodeUtf8) p
         transformToCommand _ = Nothing
+toCommandAndParams (Array []) = []
 toCommandAndParams t = error $ show t
 
 interpret :: RedisCommand -> ServerState RESP
