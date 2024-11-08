@@ -56,7 +56,8 @@ toCommandAndParams t = error $ show t
 interpret :: RedisCommand -> ServerState RESP
 interpret [Command SET, Param (ByteString key), Param (ByteString value)] = modify (M.insert key (value, Nothing)) $> String "OK"
 interpret [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
-    let milisecs = maybe 0 fst $ BS.readInteger time
+    let milisecs = maybe 0 fst (BS.readInteger time) + 1000
+    lift . putStr $ show milisecs
     date <- lift getCurrentTime
     let expireDate = addUTCTime (realToFrac(fromInteger milisecs/1000.0)) date
     modify (M.insert key (value, Just expireDate)) $> String "OK"
