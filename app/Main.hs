@@ -67,7 +67,7 @@ interpret _ (Command CONFIG: Command GET:Param (ByteString key):xs) = do
     return array
     where
         intercalateValues [] map = []
-        intercalateValues (Param (ByteString k):xs) map = maybe NullByteString ByteString (M.lookup k map) : intercalateValues xs map
+        intercalateValues (Param (ByteString k):xs) map = ByteString k:maybe NullByteString ByteString (M.lookup k map) : intercalateValues xs map
 interpret _ [Command SET, Param (ByteString key), Param (ByteString value)] = modify (first (M.insert key (value, Nothing))) $> String "OK"
 interpret date [Command SET, Param (ByteString key), Param (ByteString value), Command PX, Param (ByteString time)] = do -- modify (M.insert key (value, Nothing)) $> String "OK"
     let milisecs = maybe (error "Unable to read integer") fst (BS.readInteger time)
