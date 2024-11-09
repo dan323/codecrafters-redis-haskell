@@ -55,7 +55,7 @@ instance Ord RESP where
   compare (ByteError _) _ = LT
   compare (Map _) _ = LT
 
-data Command = ECHO | SET | GET | PING | PX
+data Command = ECHO | SET | GET | PING | PX | CONFIG
 
 data CommandPart = Command Command | Param RESP
 
@@ -67,6 +67,7 @@ toCommand "set" = Just SET
 toCommand "get" = Just GET
 toCommand "ping" = Just PING
 toCommand "px" = Just PX
+toCommand "config" = Just CONFIG
 toCommand _ = Nothing
 
 instance Show Command where
@@ -76,6 +77,7 @@ instance Show Command where
   show GET = "get"
   show PING = "ping"
   show PX = "px"
+  show CONFIG = "config"
 
 encode :: RESP -> BS.ByteString
 encode (String t) = "+" <> TSE.encodeUtf8 t <> "\r\n"
